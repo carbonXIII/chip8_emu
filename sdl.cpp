@@ -1,7 +1,5 @@
 #include "sdl.h"
 
-#define FORCE(a) { auto __id = &a; }
-
 namespace chip8 {
   render_window::view::view(render_window* parent,
                             SDL_Rect rect,
@@ -300,10 +298,10 @@ namespace chip8 {
   // force instantiate the template functions
   void FORCE_DEFINE__sdl() {
     sdl_runtime<dram> a(0, 0);
-    FORCE(sdl_runtime<dram>::clear);
-    FORCE(sdl_runtime<dram>::draw);
-    FORCE(sdl_runtime<dram>::digit_sprite);
-    FORCE(sdl_runtime<dram>::get_key);
-    FORCE(sdl_runtime<dram>::wait_key);
+    { auto _ = &sdl_runtime<dram>::clear; }
+    { auto _ = &sdl_runtime<dram>::draw; }
+    { auto _ = &sdl_runtime<dram>::digit_sprite; }
+    { auto _ = &sdl_runtime<dram>::get_key; }
+    { auto _ = &sdl_runtime<dram>::wait_key; }
   }
 }

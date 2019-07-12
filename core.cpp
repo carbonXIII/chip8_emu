@@ -1,8 +1,6 @@
 #include "core.h"
 #include "sdl.h"
 
-#define FORCE(a) { auto __id = &a; }
-
 namespace chip8 {
   extern const char* debug_str[] = {
                              "OP_CLS",
@@ -305,8 +303,8 @@ namespace chip8 {
 
   // force instantiate the template functions
   void FORCE_DEFINE__core() {
-    FORCE(dram::write<uint8_t*>);
-    FORCE(dram::write<const uint8_t*>);
-    { auto a = &cpu::update<dram, sdl_runtime<dram> >; }
+    { auto _ = &dram::write<uint8_t*>; }
+    { auto _ = &dram::write<const uint8_t*>; }
+    { auto _ = &cpu::update<dram, sdl_runtime<dram> >; }
   }
 }
