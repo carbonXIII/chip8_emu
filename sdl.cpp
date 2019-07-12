@@ -151,6 +151,9 @@ namespace chip8 {
     SDL_DestroyWindow(window);
   }
 
+  template<typename addressable_t> const double sdl_runtime<addressable_t>::decay_ratio = .8;
+  template<typename addressable_t> const int sdl_runtime<addressable_t>::digit_base = 0;
+
   template<typename addressable_t>
   const uint8_t sdl_runtime<addressable_t>::digits[0x50] = {
                                                             0xF0, 0x90, 0x90, 0x90, 0xF0,
@@ -174,25 +177,41 @@ namespace chip8 {
   template <typename addressable_t>
   sdl_runtime<addressable_t>::sdl_runtime(addressable_t* mem,
                                           render_window::view* view)
-    : mem(mem), view(view), last(-1), pixels(W * H, 0) {
+    : mem(mem), view(view), pixels(W * H, 0), with_decay(W * H, 0), last(-1) {
     mem->write(digit_base, digits, 0x50);
     view->parent->register_listener(std::bind(&sdl_runtime::set_last_key, this, std::placeholders::_1));
   }
 
   template <typename addressable_t>
-  constexpr uint32_t sdl_runtime<addressable_t>::get_pixel(bool val) {
-    return (val ? -1 : 0) | 0xFF;
+  constexpr uint32_t sdl_runtime<addressable_t>::get_pixel(uint8_t val) {
+    uint32_t ret = 0xFF;
+    ret |= val << 8;
+    ret |= val << 16;
+    ret |= val << 24;
+    return ret;
   }
 
   template <typename addressable_t>
   void sdl_runtime<addressable_t>::clear() {
-    uint32_t* p = (uint32_t*)view->lock();
-    int stride = view->pitch() / sizeof(uint32_t);
-
     for(int i = 0; i < H; i++) {
       for(int j = 0; j < W; j++) {
-        p[i * stride + j] = get_pixel(0);
-        pixels[i * 64 + j] = 0;
+        pixels[i * W + j] = 0;
+      }
+    }
+  }
+
+  template <typename addressable_t>
+  void sdl_runtime<addressable_t>::update(double elapsed_ms) {
+    double adj_decay = pow(decay_ratio, elapsed_ms);
+
+    uint32_t* p = (uint32_t*)view->lock();
+    int stride = view->pitch() / sizeof(uint32_t);
+    for(int i = 0; i < H; i++) {
+      for(int j = 0; j < W; j++) {
+        with_decay[i * W + j] = pixels[i * W + j] ? 255 :
+          with_decay[i * W + j] * adj_decay;
+
+        p[i * stride + j] = get_pixel(with_decay[i * W + j]);
       }
     }
     view->unlock();
@@ -200,7 +219,6 @@ namespace chip8 {
 
   template <typename addressable_t>
   bool sdl_runtime<addressable_t>::draw(int addr, int n, int x, int y) {
-    uint32_t* p = (uint32_t*)view->lock();
     int stride = view->pitch() / sizeof(uint32_t);
 
     bool ret = false;
@@ -209,14 +227,13 @@ namespace chip8 {
       for(int j = 0; j < 8; j++) {
         int X = (j + x) % W;
         int Y = (i + y) % H;
-        bool existing = pixels[Y * 64 + X];
+        bool existing = pixels[Y * W + X];
         bool to_add = sprite[7 - j];
 
         if(existing && to_add)
           ret = true;
 
-        pixels[Y * 64 + X] = existing ^ to_add;
-        p[Y * stride + X] = get_pixel(pixels[Y * 64 + X]);
+        pixels[Y * W + X] = existing ^ to_add;
       }
     }
 
@@ -227,7 +244,6 @@ namespace chip8 {
       }
     }
 
-    view->unlock();
     return ret;
   }
 
@@ -309,5 +325,6 @@ namespace chip8 {
     { auto _ = &sdl_runtime<dram>::digit_sprite; }
     { auto _ = &sdl_runtime<dram>::get_key; }
     { auto _ = &sdl_runtime<dram>::wait_key; }
+    { auto _ = &sdl_runtime<dram>::update; }
   }
 }

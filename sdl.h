@@ -65,22 +65,27 @@ namespace chip8 {
     addressable_t* mem;
     render_window::view* view;
 
-    int W = 64;
-    int H = 32;
+    static const int W = 64;
+    static const int H = 32;
 
-    std::vector<int> pixels;
+    std::vector<bool> pixels;
+    std::vector<uint8_t> with_decay;
+
+    static const double decay_ratio;
 
     static const uint8_t digits[0x50];
 
-    const int digit_base = 0;
+    static const int digit_base;
     std::atomic<int> last;
 
     sdl_runtime(addressable_t* mem, render_window::view* view);
 
-    constexpr uint32_t get_pixel(bool val);
+    constexpr uint32_t get_pixel(uint8_t val);
 
     void clear();
     bool draw(int addr, int n, int x, int y);
+
+    void update(double elapsed_ms);
 
     int digit_sprite(int digit);
 

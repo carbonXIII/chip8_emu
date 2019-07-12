@@ -59,11 +59,13 @@ int main() {
   }
 
   int acc = 0;
+  int delta = 0;
   clock_t last = clock();
   int timer_interval = CLOCKS_PER_SEC / 60;
   assert(timer_interval);
 
   while(win.update()) {
+    runtime.update(delta * 1000 / (double)CLOCKS_PER_SEC);
     if(state >= 0) {
       cpu.update(&ram, &runtime, print);
     }
@@ -78,7 +80,8 @@ int main() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
-    acc += clock() - last;
+    delta = clock() - last;
+    acc += delta;
     runtime.update_timers(acc / timer_interval);
     acc %= timer_interval;
 
