@@ -16,8 +16,21 @@ T input(const char* msg) {
   return ret;
 }
 
+int state = 0;
+int print = 0;
+int print_regs = 0;
+
+void handle_key(int key) {
+  switch(key) {
+  case SDLK_RETURN: { state = (state < 0) ? 0 : -1; break; }
+  case SDLK_f: { if(state < 0) state = 1; print = 1; break; }
+  case SDLK_r: { print_regs = 1; }
+  }
+}
+
 int main() {
   chip8::render_window win(1280,640);
+  win.register_listener(handle_key);
 
   chip8::cpu cpu(chip8::dram::ROM_START);
   chip8::dram ram;
@@ -32,6 +45,7 @@ int main() {
   // load the rom
   {
     string rom_path = input<string>("ROM path: ");
+    cout << endl;
 
     ifstream rom_in(rom_path.c_str(), ios::binary | ios::ate);
 
@@ -50,7 +64,17 @@ int main() {
   assert(timer_interval);
 
   while(win.update()) {
-    cpu.update(&ram, &runtime);
+    if(state >= 0) {
+      cpu.update(&ram, &runtime, print);
+    }
+
+    if(print_regs) {
+      cpu.dump_regs(cout);
+      print_regs = 0;
+    }
+
+    if(print) print = 0;
+    if(state == 1) state = -1;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
 

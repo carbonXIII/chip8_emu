@@ -1,5 +1,11 @@
 #include "sdl.h"
 
+#ifdef DEBUG
+#define D
+#else
+#define D if(false)
+#endif
+
 namespace chip8 {
   render_window::view::view(render_window* parent,
                             SDL_Rect rect,
@@ -197,8 +203,6 @@ namespace chip8 {
     uint32_t* p = (uint32_t*)view->lock();
     int stride = view->pitch() / sizeof(uint32_t);
 
-    std::cout << x << ", " << y << std::endl;
-
     bool ret = false;
     for(int i = 0; i < n; i++) {
       auto sprite = std::bitset<8>(mem->get(addr + i));
@@ -216,9 +220,11 @@ namespace chip8 {
       }
     }
 
-    std::cout << "drawn: " << std::endl;
-    for(int i = 0; i < n; i++) {
-      std::cout << std::bitset<8>(mem->get(addr + i)) << std::endl;
+    D {
+      std::cout << "drawn: " << std::endl;
+      for(int i = 0; i < n; i++) {
+        std::cout << std::bitset<8>(mem->get(addr + i)) << std::endl;
+      }
     }
 
     view->unlock();
@@ -252,7 +258,7 @@ namespace chip8 {
     case 0xE: return SDLK_e;
     case 0xF: return SDLK_f;
     }
-    return SDLK_F1;//this shouldn't happen
+    return SDLK_F1; // this shouldn't happen
   }
 
   template <typename addressable_t>
@@ -275,7 +281,7 @@ namespace chip8 {
     case SDLK_e: return 0xE;
     case SDLK_f: return 0xF;
     }
-    return -1;// ignore unmapped keys
+    return -1; // ignore unmapped keys
   }
 
   template <typename addressable_t>

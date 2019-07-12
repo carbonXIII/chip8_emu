@@ -1,8 +1,16 @@
 #include "core.h"
 #include "sdl.h"
 
+#ifdef DEBUG
+#define D
+#else
+#define D if(false)
+#endif
+
+#define HEX(a) std::hex << a << std::dec
+
 namespace chip8 {
-  extern const char* debug_str[] = {
+  const char* debug_str[] = {
                              "OP_CLS",
                              "OP_RET",
                              "OP_SYS",
@@ -40,7 +48,7 @@ namespace chip8 {
                              "OP_restore_regs"
   };
 
-  cpu::cpu(int pc_start): sp(0), pc(pc_start) {}
+  cpu::cpu(int pc_start): pc(pc_start), sp(0) {}
 
   int combine(uint16_t up, uint16_t lo) {
     int ret = lo;
@@ -63,7 +71,7 @@ namespace chip8 {
   cpu::instr cpu::fetch_and_decode(addressable_t* mem) {
     uint8_t up = mem->get(pc++);
     uint8_t lo = mem->get(pc++);
-    printf("%03x: %02x%02x\n", pc-2, up, lo);
+    D printf("%03x: %02x%02x\n", pc-2, up, lo);
 
     instr ret;
     switch(up >> 4) {
@@ -140,10 +148,12 @@ namespace chip8 {
 
   template <typename addressable_t, typename runtime_t>
   void cpu::update(addressable_t* mem,
-                   runtime_t* r) {
+                   runtime_t* r,
+                   bool print) {
     instr i = fetch_and_decode(mem);
 
-    std::cerr << i.to_string() << std::endl;
+    D printf("%d: %s\n", pc-2, i.to_string().c_str());
+    else if(print) printf("%d: %s\n", pc-2, i.to_string().c_str());
 
     switch(i.op) {
     case OP_CLS: { r->clear(); break; }
@@ -151,7 +161,7 @@ namespace chip8 {
     case OP_SYS: { break; }
     case OP_JP: { pc = i.arg0; break; }
     case OP_CALL: { stack[sp++] = pc; pc = i.arg0; break; }
-    case OP_SEb: { printf("%d == %d\n", v[i.arg0], i.arg1); if(v[i.arg0] == i.arg1) pc+=2; break; }
+    case OP_SEb: { if(v[i.arg0] == i.arg1) pc+=2; break; }
     case OP_SNEb: { if(v[i.arg0] != i.arg1) pc+=2; break; }
     case OP_SEr: { if(v[i.arg0] == v[i.arg1]) pc+=2; break; }
     case OP_LDb: { v[i.arg0] = i.arg1; break; }
@@ -207,14 +217,30 @@ namespace chip8 {
     case OP_ADDi: { I += v[i.arg0]; break; }
     case OP_LDf: { I = r->digit_sprite(v[i.arg0]); break; }
     case OP_LDbcd: { mem->write(I, r->bcd(v[i.arg0]), 3); break; }
-    case OP_backup_regs: { mem->write(I, v, i.arg0); break; }
-    case OP_restore_regs: { mem->read(I, v, i.arg0); break; }
+    case OP_backup_regs: { mem->write(I, v, i.arg0 + 1); break; }
+    case OP_restore_regs: { mem->read(I, v, i.arg0 + 1); break; }
     default:
       {
         std::cerr << "ignoring unknown instr: " << i.op << std::endl;
         break;
       };
     }
+  }
+
+  std::ostream& cpu::dump_regs(std::ostream& os) {
+    os << "pc=" << HEX(pc) << "\n";
+    os << "I=" << HEX(I) << "\n";
+    os << "sp=" << HEX(sp) << "\n";
+
+    for(int i = 0; i < 16; i++) {
+      os << "v[" << i << "]=" << HEX((uint32_t)v[i]) << "\n";
+    }
+
+    for(int i = 0; i < 16; i++) {
+      os << "stack[" << i << "]=" << HEX(stack[i]) << "\n";
+    }
+
+    return (os << std::endl);
   }
 
   dram::dram() {

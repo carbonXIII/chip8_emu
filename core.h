@@ -95,7 +95,9 @@ namespace chip8 {
     instr fetch_and_decode(addressable_t* mem);
 
     template <typename addressable_t, typename runtime_t>
-    void update(addressable_t* mem, runtime_t* r);
+    void update(addressable_t* mem, runtime_t* r, bool print = false);
+
+    std::ostream& dump_regs(std::ostream& os);
   };
 
   struct dram: addressable {
