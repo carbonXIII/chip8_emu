@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "sdl.h"
-#include "chip8.h"
+#include "core.h"
 
 using namespace std;
 
@@ -18,25 +18,6 @@ T input(const char* msg) {
 
 int main() {
   chip8::render_window win(1280,640);
-
-  // auto view =  win.add_view();
-
-  // uint8_t* pixels = (uint8_t*)view->lock();
-
-  // cout << view->pitch() << endl;
-
-  // for(int i = 0; i < 200; i++) {
-  //   for(int j = 0; j < 200; j++) {
-  //     pixels[i * view->pitch() + j * 4] = i;
-  //     pixels[i * view->pitch() + j * 4 + 1] = j;
-  //     pixels[i * view->pitch() + j * 4 + 2] = 127;
-  //     pixels[i * view->pitch() + j * 4 + 3] = 127;
-  //   }
-  // }
-
-  // view->unlock();
-
-  // win.update();
 
   chip8::cpu cpu(chip8::dram::ROM_START);
   chip8::dram ram;
@@ -68,9 +49,7 @@ int main() {
   int timer_interval = CLOCKS_PER_SEC / 60;
   assert(timer_interval);
 
-  bool redraw = true;
-
-  while(win.update(redraw)) {
+  while(win.update()) {
     cpu.update(&ram, &runtime);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -78,9 +57,6 @@ int main() {
     acc += clock() - last;
     runtime.update_timers(acc / timer_interval);
     acc %= timer_interval;
-
-
-    redraw = true;
 
     last = clock();
   }
