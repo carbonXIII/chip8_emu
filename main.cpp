@@ -78,6 +78,10 @@ int main() {
     if(print) print = 0;
     if(state == 1) state = -1;
 
+    // frequency somewhere in 400-800 hz range depending on
+    // how long the other operations take
+    // TODO: time the previous operations and subtract them from this
+    // to achieve more consistent ops
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
     delta = clock() - last;
